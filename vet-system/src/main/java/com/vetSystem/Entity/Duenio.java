@@ -27,7 +27,7 @@ public class Duenio {
     @Column(nullable = false, unique = true)
     private String cedula;
     @Column(nullable = false)
-    private int telefono;
+    private String telefono;
     @Column(nullable = false)
     private String email;
 
