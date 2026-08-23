@@ -3,6 +3,7 @@ package com.vetSystem.Controller;
 import com.vetSystem.Entity.Duenio;
 import com.vetSystem.Exception.ResourceNotFoundException;
 import com.vetSystem.Service.DuenioService;
+import com.vetSystem.Service.MascotaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +18,22 @@ public class DuenioController {
 
     @Autowired
     private DuenioService duenioService;
+    @Autowired
+    private MascotaService mascotaService;
 
     @GetMapping
     public ResponseEntity<List<Duenio>> buscarTodosLosDuenios(){
 
         return ResponseEntity.ok(duenioService.listarTodos());
+    }
+
+    @GetMapping("/{id}/mascotas")
+    public ResponseEntity<?> listarMascotasDelDuenio(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(mascotaService.listarPorDuenio(id));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
@@ -35,6 +47,7 @@ public class DuenioController {
         }
 
     }
+
 
     @PostMapping
     public ResponseEntity<?> crearDuenio(@RequestBody Duenio duenio){
@@ -50,7 +63,7 @@ public class DuenioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> actualizarDuenio(@PathVariable Long id, @RequestBody Duenio duenio){
+    public ResponseEntity<Duenio> actualizarDuenio(@PathVariable Long id, @RequestBody Duenio duenio){
         try{
             return ResponseEntity.ok(duenioService.modificarDuenio(id,duenio));
         } catch (ResourceNotFoundException e){

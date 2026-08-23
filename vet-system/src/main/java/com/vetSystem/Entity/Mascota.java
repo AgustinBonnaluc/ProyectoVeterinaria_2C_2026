@@ -1,5 +1,6 @@
 package com.vetSystem.Entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,10 +22,12 @@ public class Mascota {
     @Column(nullable = false)
     private String especie;
 
+    @Column(nullable = false)
     private String raza;
     private LocalDate fechaNacimiento;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "duenio_id", nullable = false)
+    @JsonBackReference
     private Duenio duenio;
 }
