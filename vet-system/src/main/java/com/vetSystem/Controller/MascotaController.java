@@ -1,25 +1,25 @@
 package com.vetSystem.Controller;
 
-
-import com.vetSystem.Entity.Mascota;
+import com.vetSystem.DTO.MascotaDTO;
 import com.vetSystem.Exception.DuplicateResourceException;
 import com.vetSystem.Exception.ResourceNotFoundException;
 import com.vetSystem.Service.MascotaService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/mascota")
+@RequiredArgsConstructor
 public class MascotaController {
 
-    @Autowired
-    private MascotaService mascotaService;
+    private final MascotaService mascotaService;
 
     @GetMapping
-    public ResponseEntity<List<Mascota>> listarTodas() {
+    public ResponseEntity<List<MascotaDTO>> listarTodas() {
         return ResponseEntity.ok(mascotaService.listarTodos());
     }
 
@@ -33,10 +33,9 @@ public class MascotaController {
     }
 
     @PostMapping
-    public ResponseEntity<?> registrarMascota(@RequestBody Mascota mascota,
-                                              @RequestParam Long duenioId) {
+    public ResponseEntity<?> registrarMascota(@RequestBody MascotaDTO mascotaDTO) {
         try {
-            Mascota nueva = mascotaService.guardarMascota(mascota, duenioId);
+            MascotaDTO nueva = mascotaService.guardarMascota(mascotaDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(nueva);
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -47,10 +46,9 @@ public class MascotaController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> modificarMascota(@PathVariable Long id,
-                                              @RequestBody Mascota mascota,
-                                              @RequestParam(required = false) Long duenioId) {
+                                              @RequestBody MascotaDTO mascotaDTO) {
         try {
-            return ResponseEntity.ok(mascotaService.modificarMascota(id, mascota, duenioId));
+            return ResponseEntity.ok(mascotaService.modificarMascota(id, mascotaDTO));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
@@ -65,6 +63,4 @@ public class MascotaController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
     }
-
-
 }

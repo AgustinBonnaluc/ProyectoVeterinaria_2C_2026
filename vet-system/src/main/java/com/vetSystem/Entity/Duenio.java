@@ -1,24 +1,19 @@
 package com.vetSystem.Entity;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
 
-//@Getter
-//@Setter
-
 @Entity
 @Data
-@AllArgsConstructor //genera un constructor con todos los args
-@NoArgsConstructor //constructor sin argumentos
-
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "duenios")
 public class Duenio {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) //autoincremental
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
@@ -32,7 +27,8 @@ public class Duenio {
     @Column(nullable = false)
     private String email;
 
-    @OneToMany (mappedBy = "duenio", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonManagedReference
+    @OneToMany(mappedBy = "duenio", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ToString.Exclude          // evita el toString() recursivo Duenio → Mascota → Duenio
+    @EqualsAndHashCode.Exclude // evita el hashCode() recursivo
     private List<Mascota> mascotas;
 }
