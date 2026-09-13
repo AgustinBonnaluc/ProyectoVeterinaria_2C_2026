@@ -1,72 +1,88 @@
 package com.vetSystem.Service;
 
-
+import com.vetSystem.DTO.MascotaDTO;
 import com.vetSystem.Entity.Duenio;
 import com.vetSystem.Entity.Mascota;
 import com.vetSystem.Exception.DuplicateResourceException;
 import com.vetSystem.Exception.ResourceNotFoundException;
+import com.vetSystem.Mapper.MascotaMapper;
 import com.vetSystem.Repository.MascotaRepository;
-import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@AllArgsConstructor(onConstructor_ = @__(@Autowired))
+@RequiredArgsConstructor
 public class MascotaService {
 
     private final MascotaRepository mascotaRepository;
     private final DuenioService duenioService;
+    private final MascotaMapper mascotaMapper;
 
+    @Transactional(readOnly = true)
+    public Mascota obtenerEntidad(Long id) {
+        return mascotaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Mascota", id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MascotaDTO> listarTodos() {
+        return mascotaRepository.findAll()
+                .stream()
+                .map(mascotaMapper::toDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MascotaDTO buscarPorId(Long id) {
+        return mascotaMapper.toDTO(obtenerEntidad(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MascotaDTO> listarPorDuenio(Long duenioId) {
+        duenioService.obtenerEntidad(duenioId); // 404 si el dueño no existe
+        return mascotaRepository.findByDuenioId(duenioId)
+                .stream()
+                .map(mascotaMapper::toDTO)
+                .toList();
+    }
 
     @Transactional
-    public Mascota guardarMascota(Mascota mascota, Long duenioId){
-        Duenio duenio = duenioService.buscarPorId(duenioId);
+    public MascotaDTO guardarMascota(MascotaDTO dto) {
+        Duenio duenio = duenioService.obtenerEntidad(dto.getDuenioId());
 
-        if (mascotaRepository.existsByNombreAndDuenioId(mascota.getNombre(), duenioId)) {
-            throw new DuplicateResourceException("Mascota", mascota.getNombre());
+        if (mascotaRepository.existsByNombreAndDuenioId(dto.getNombre(), dto.getDuenioId())) {
+            throw new DuplicateResourceException(
+                    "Mascota", "nombre", dto.getNombre());
         }
 
-        mascota.setDuenio(duenio);
-        return mascotaRepository.save(mascota);
+        Mascota mascota = mascotaMapper.toEntity(dto);
+        mascota.setId(null);
+        mascota.setDuenio(duenio); // el mapper lo ignoró: lo resuelve el Service
+        return mascotaMapper.toDTO(mascotaRepository.save(mascota));
     }
 
     @Transactional
-    public Mascota modificarMascota(Long id, Mascota mascotaActualizada, Long duenioId) {
-        Mascota mascota = buscarPorId(id);
+    public MascotaDTO modificarMascota(Long id, MascotaDTO dto) {
+        Mascota mascota = obtenerEntidad(id);
 
-        mascota.setNombre(mascotaActualizada.getNombre());
-        mascota.setEspecie(mascotaActualizada.getEspecie());
-        mascota.setRaza(mascotaActualizada.getRaza());
-        mascota.setFechaNacimiento(mascotaActualizada.getFechaNacimiento());
+        mascota.setNombre(dto.getNombre());
+        mascota.setEspecie(dto.getEspecie());
+        mascota.setRaza(dto.getRaza());
+        mascota.setFechaNacimiento(dto.getFechaNacimiento());
 
-        if (duenioId != null) {
-            mascota.setDuenio(duenioService.buscarPorId(duenioId));
+        // Cambio de dueño opcional
+        if (dto.getDuenioId() != null && !dto.getDuenioId().equals(mascota.getDuenio().getId())) {
+            mascota.setDuenio(duenioService.obtenerEntidad(dto.getDuenioId()));
         }
 
-        return mascotaRepository.save(mascota);
+        return mascotaMapper.toDTO(mascotaRepository.save(mascota));
     }
-
 
     @Transactional
-    public void eliminarMascota(Long id){
-        Mascota mascota = buscarPorId(id);
-        mascotaRepository.delete(mascota);
+    public void eliminarMascota(Long id) {
+        mascotaRepository.delete(obtenerEntidad(id));
     }
-
-    public Mascota buscarPorId(Long id){
-        return mascotaRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Mascota",id));
-    }
-
-    public List<Mascota> listarTodos(){
-        return mascotaRepository.findAll();
-    }
-
-    public List<Mascota> listarPorDuenio(Long duenioId) {
-        duenioService.buscarPorId(duenioId);
-        return mascotaRepository.findByDuenioId(duenioId);
-    }
-
 }

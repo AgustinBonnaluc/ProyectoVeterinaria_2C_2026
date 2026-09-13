@@ -1,71 +1,73 @@
 package com.vetSystem.Service;
 
+import com.vetSystem.DTO.DuenioDTO;
 import com.vetSystem.Entity.Duenio;
 import com.vetSystem.Exception.DuplicateResourceException;
 import com.vetSystem.Exception.ResourceNotFoundException;
+import com.vetSystem.Mapper.DuenioMapper;
 import com.vetSystem.Repository.DuenioRepository;
-import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.DuplicateFormatFlagsException;
 import java.util.List;
-import java.util.Optional;
-
 
 @Service
-@AllArgsConstructor(onConstructor_ = @__(@Autowired))
+@RequiredArgsConstructor
 public class DuenioService {
 
-    @Autowired //
     private final DuenioRepository duenioRepository;
+    private final DuenioMapper duenioMapper;
 
-    public List<Duenio> listarTodos(){
-        return duenioRepository.findAll();
+    /**
+     * Uso INTERNO entre services (MascotaService lo necesita para setear la relación).
+     * No sale nunca hacia el Controller.
+     */
+    @Transactional(readOnly = true)
+    public Duenio obtenerEntidad(Long id) {
+        return duenioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Dueño", id));
     }
 
-    //saco el Optional para no tener que manejarlo, o devuelve un Dueño o lanza excepcion. (preguntar)
-    public Duenio buscarPorId(Long id){
+    @Transactional(readOnly = true)
+    public List<DuenioDTO> listarTodos() {
+        return duenioRepository.findAll()
+                .stream()
+                .map(duenioMapper::toDTO)
+                .toList();
+    }
 
-        return duenioRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Dueño",id));
-
+    @Transactional(readOnly = true)
+    public DuenioDTO buscarPorId(Long id) {
+        return duenioMapper.toDTO(obtenerEntidad(id));
     }
 
     @Transactional
-    public Duenio registrarDuenio(Duenio duenio){
-
-        if (duenioRepository.existsByCedula(duenio.getCedula())){
-
-            throw new DuplicateResourceException("Dueño",duenio.getCedula());
-        }else{
-            return duenioRepository.save(duenio);
+    public DuenioDTO registrarDuenio(DuenioDTO dto) {
+        if (duenioRepository.existsByCedula(dto.getCedula())) {
+            throw new DuplicateResourceException("Dueño", "cédula", dto.getCedula());
         }
-
+        Duenio duenio = duenioMapper.toEntity(dto);
+        duenio.setId(null); // el cliente no decide el ID, aunque lo mande en el JSON
+        return duenioMapper.toDTO(duenioRepository.save(duenio));
     }
 
-    public Duenio modificarDuenio(Long id, Duenio duenioActualizado){
-        Duenio duenio = buscarPorId(id);
-        duenio.setNombre(duenioActualizado.getNombre());
-        duenio.setApellido(duenioActualizado.getApellido());
-        duenio.setEmail(duenioActualizado.getEmail());
-        duenio.setTelefono(duenioActualizado.getTelefono());
-
-        return duenioRepository.save(duenio);
+    @Transactional
+    public DuenioDTO modificarDuenio(Long id, DuenioDTO dto) {
+        Duenio duenio = obtenerEntidad(id);
+        duenio.setNombre(dto.getNombre());
+        duenio.setApellido(dto.getApellido());
+        duenio.setTelefono(dto.getTelefono());
+        duenio.setEmail(dto.getEmail());
+        // la cédula NO se modifica: es la clave natural del dueño
+        return duenioMapper.toDTO(duenioRepository.save(duenio));
     }
 
-    public void eliminarDuenio(Long id){
-        Duenio duenio = buscarPorId(id);
-        duenioRepository.delete(duenio);
+    @Transactional
+    public void eliminarDuenio(Long id) {
+        duenioRepository.delete(obtenerEntidad(id));
     }
-
-    public Optional<Duenio> buscarPorNombre(String nombre){
-        return duenioRepository.findByNombre(nombre);
-
-    }
-
 }
-
 
 
 
