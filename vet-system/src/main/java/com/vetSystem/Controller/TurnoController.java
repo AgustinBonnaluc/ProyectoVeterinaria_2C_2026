@@ -3,8 +3,8 @@ package com.vetSystem.Controller;
 import com.vetSystem.DTO.TurnoRequestDTO;
 import com.vetSystem.DTO.TurnoResponseDTO;
 import com.vetSystem.Entity.EstadoTurno;
-import com.vetSystem.Exception.ResourceNotFoundException;
 import com.vetSystem.Service.TurnoService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -27,70 +27,39 @@ public class TurnoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(turnoService.buscarPorId(id));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public ResponseEntity<TurnoResponseDTO> buscarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(turnoService.buscarPorId(id));
     }
 
-    // GET /api/turno/agenda?veterinarioId=1&fecha=2026-07-10
     @GetMapping("/agenda")
-    public ResponseEntity<?> obtenerAgenda(
+    public ResponseEntity<List<TurnoResponseDTO>> obtenerAgenda(
             @RequestParam Long veterinarioId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha) {
-        try {
-            return ResponseEntity.ok(turnoService.obtenerAgenda(veterinarioId, fecha));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+        return ResponseEntity.ok(turnoService.obtenerAgenda(veterinarioId, fecha));
     }
 
     @PostMapping
-    public ResponseEntity<?> registrarTurno(@RequestBody TurnoRequestDTO request) {
-        try {
-            TurnoResponseDTO nuevo = turnoService.registrarTurno(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        }
+    public ResponseEntity<TurnoResponseDTO> registrarTurno(@Valid @RequestBody TurnoRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(turnoService.registrarTurno(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> modificarTurno(@PathVariable Long id,
-                                            @RequestBody TurnoRequestDTO request) {
-        try {
-            return ResponseEntity.ok(turnoService.modificarTurno(id, request));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        }
+    public ResponseEntity<TurnoResponseDTO> modificarTurno(@PathVariable Long id,
+                                                           @Valid @RequestBody TurnoRequestDTO request) {
+        return ResponseEntity.ok(turnoService.modificarTurno(id, request));
     }
 
-    // PATCH /api/turno/1/estado?estado=FINALIZADO&observaciones=Sin%20novedades
     @PatchMapping("/{id}/estado")
-    public ResponseEntity<?> actualizarEstado(
+    public ResponseEntity<TurnoResponseDTO> actualizarEstado(
             @PathVariable Long id,
             @RequestParam EstadoTurno estado,
             @RequestParam(required = false) String observaciones) {
-        try {
-            return ResponseEntity.ok(turnoService.actualizarEstado(id, estado, observaciones));
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+        return ResponseEntity.ok(turnoService.actualizarEstado(id, estado, observaciones));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> eliminarTurno(@PathVariable Long id) {
-        try {
-            turnoService.eliminarTurno(id);
-            return ResponseEntity.noContent().build();
-        } catch (ResourceNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public ResponseEntity<Void> eliminarTurno(@PathVariable Long id) {
+        turnoService.eliminarTurno(id);
+        return ResponseEntity.noContent().build();
     }
 }
