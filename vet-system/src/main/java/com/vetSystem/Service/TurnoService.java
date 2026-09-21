@@ -7,6 +7,7 @@ import com.vetSystem.Entity.Mascota;
 import com.vetSystem.Entity.Turno;
 import com.vetSystem.Entity.Veterinario;
 import com.vetSystem.Exception.ResourceNotFoundException;
+import com.vetSystem.Exception.TurnoSuperpuestoException;
 import com.vetSystem.Mapper.TurnoMapper;
 import com.vetSystem.Repository.TurnoRepository;
 import lombok.RequiredArgsConstructor;
@@ -64,8 +65,8 @@ public class TurnoService {
         // 3. REGLA DE NEGOCIO: no puede haber superposición → 409 si la hay
         if (turnoRepository.existsByVeterinarioIdAndFechaAndHora(
                 request.getVeterinarioId(), request.getFecha(), request.getHora())) {
-            throw new RuntimeException("El veterinario ya tiene un turno el "
-                    + request.getFecha() + " a las " + request.getHora());
+            throw new TurnoSuperpuestoException(
+                    request.getVeterinarioId(), request.getFecha(), request.getHora());
         }
 
         // 4. Recién ahora construimos y persistimos
@@ -90,8 +91,8 @@ public class TurnoService {
         // misma validación, pero sin contarse a sí mismo
         if (turnoRepository.existsByVeterinarioIdAndFechaAndHoraAndIdNot(
                 request.getVeterinarioId(), request.getFecha(), request.getHora(), id)) {
-            throw new RuntimeException("El veterinario ya tiene un turno el "
-                    + request.getFecha() + " a las " + request.getHora());
+            throw new TurnoSuperpuestoException(
+                    request.getVeterinarioId(), request.getFecha(), request.getHora());
         }
 
         turno.setFecha(request.getFecha());
