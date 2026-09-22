@@ -66,11 +66,13 @@ public class TurnoService {
         Veterinario veterinario = veterinarioService.obtenerEntidad(request.getVeterinarioId());
 
         // 3. REGLA DE NEGOCIO: no puede haber superposición → 409 si la hay
-        if (turnoRepository.existsByVeterinarioIdAndFechaAndHora(
-                request.getVeterinarioId(), request.getFecha(), request.getHora())) {
-            throw new TurnoSuperpuestoException(
-                    request.getVeterinarioId(), request.getFecha(), request.getHora());
-        }
+        turnoRepository.findByVeterinarioIdAndFechaAndHora(
+                        request.getVeterinarioId(), request.getFecha(), request.getHora())
+                .ifPresent(conflictivo -> {
+                    throw new TurnoSuperpuestoException(
+                            request.getVeterinarioId(), conflictivo.getId(),
+                            conflictivo.getFecha(), conflictivo.getHora());
+                });
 
         // 4. Recién ahora construimos y persistimos
         Turno turno = new Turno();
@@ -91,12 +93,14 @@ public class TurnoService {
         Mascota mascota = mascotaService.obtenerEntidad(request.getMascotaId());
         Veterinario veterinario = veterinarioService.obtenerEntidad(request.getVeterinarioId());
 
-        // misma validación, pero sin contarse a sí mismo
-        if (turnoRepository.existsByVeterinarioIdAndFechaAndHoraAndIdNot(
-                request.getVeterinarioId(), request.getFecha(), request.getHora(), id)) {
-            throw new TurnoSuperpuestoException(
-                    request.getVeterinarioId(), request.getFecha(), request.getHora());
-        }
+        // veterinario no puede tener dos turnos en el mismo horario
+        turnoRepository.findByVeterinarioIdAndFechaAndHoraAndIdNot(
+                        request.getVeterinarioId(), request.getFecha(), request.getHora(), id)
+                .ifPresent(conflictivo -> {
+                    throw new TurnoSuperpuestoException(
+                            request.getVeterinarioId(), conflictivo.getId(),
+                            conflictivo.getFecha(), conflictivo.getHora());
+                });
 
         turno.setFecha(request.getFecha());
         turno.setHora(request.getHora());
