@@ -42,11 +42,19 @@ public class GlobalExceptionHandler {
         return construir(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    // HTTP 422: los datos son sintácticamente válidos pero violan una regla de negocio
+    @ExceptionHandler({StockInsuficienteException.class, CupoMascotasExcedidoException.class})
+    public ResponseEntity<ErrorResponse> manejarReglaDeNegocio(RuntimeException ex,
+                                                               HttpServletRequest request) {
+        return construir(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(TurnoSuperpuestoException.class)
     public ResponseEntity<ErrorResponse> manejarSuperposicion(TurnoSuperpuestoException ex,
                                                               HttpServletRequest request) {
         return construir(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
+
 
     // HTTP 500: red de contención, error inesperado del servidor
     @ExceptionHandler(Exception.class)

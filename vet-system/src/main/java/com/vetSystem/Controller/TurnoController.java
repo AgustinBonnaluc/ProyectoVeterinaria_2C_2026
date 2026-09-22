@@ -1,5 +1,6 @@
 package com.vetSystem.Controller;
 
+import com.vetSystem.DTO.MedicamentoResponseDTO;
 import com.vetSystem.DTO.TurnoRequestDTO;
 import com.vetSystem.DTO.TurnoResponseDTO;
 import com.vetSystem.Entity.EstadoTurno;
@@ -20,7 +21,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/turno")
+@RequestMapping({"/api/turno"})
 @RequiredArgsConstructor
 @Tag(name = "Turnos", description = "Agenda de turnos: alta con control de superposición, consulta y cambio de estado")
 public class TurnoController {
@@ -116,4 +117,20 @@ public class TurnoController {
         turnoService.eliminarTurno(id);
         return ResponseEntity.noContent().build();
     }
+
+
+
+
+
+    @GetMapping("/{id}/medicamentos")
+    public ResponseEntity<List<MedicamentoResponseDTO>> listarMedicamentos(@PathVariable Long id) {
+        return ResponseEntity.ok(turnoService.listarMedicamentos(id));
+    }
+
+    @PostMapping("/{turnoId}/medicamentos/{medicamentoId}")
+    public ResponseEntity<List<MedicamentoResponseDTO>> recetarMedicamento(@PathVariable Long turnoId,
+                                                                           @PathVariable Long medicamentoId) {
+        return ResponseEntity.ok(turnoService.recetarMedicamento(turnoId, medicamentoId));
+    }
+
 }

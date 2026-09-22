@@ -9,4 +9,9 @@ Mantuve "spring.jpa.hibernate.ddl-auto=update" porque me permite que hibernate c
 Ademas estamos en entorno de desarrollo.
 
 
+###Validacion de stock
+En el service voy a poner el control de stock con un metodo llamado "descontarUnidad" en MedicamentoService. 
+Lo puse en MedicamentoService porque el stock es un atributo propio del medicamento. 
 
+Elegi como codigo de error 422 porque un 400 significa que la peticion esta mal formada o faltan datos y tampoco usé 409
+porque no sería un caso de recurso o dato ya existente. 

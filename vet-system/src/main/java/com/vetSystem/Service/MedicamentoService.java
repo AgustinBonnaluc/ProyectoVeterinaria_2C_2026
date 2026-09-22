@@ -65,5 +65,12 @@ public class MedicamentoService {
         medicamentoRepository.delete(obtenerEntidad(id));
     }
 
-
+    @Transactional
+    public void descontarUnidad(Medicamento medicamento) {
+        if (medicamento.getStock() <= 0) { //si el stock es menor o igual a 0 lanzo la excep
+            throw new StockInsuficienteException(medicamento.getId(), medicamento.getNombre());
+        }
+        medicamento.setStock(medicamento.getStock() - 1);
+        medicamentoRepository.save(medicamento);
+    }
 }

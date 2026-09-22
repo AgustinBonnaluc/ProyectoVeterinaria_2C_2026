@@ -1,13 +1,13 @@
 package com.vetSystem.Service;
 
+import com.vetSystem.DTO.MedicamentoResponseDTO;
 import com.vetSystem.DTO.TurnoRequestDTO;
 import com.vetSystem.DTO.TurnoResponseDTO;
-import com.vetSystem.Entity.EstadoTurno;
-import com.vetSystem.Entity.Mascota;
-import com.vetSystem.Entity.Turno;
-import com.vetSystem.Entity.Veterinario;
+import com.vetSystem.Entity.*;
+import com.vetSystem.Exception.DuplicateResourceException;
 import com.vetSystem.Exception.ResourceNotFoundException;
 import com.vetSystem.Exception.TurnoSuperpuestoException;
+import com.vetSystem.Mapper.MedicamentoMapper;
 import com.vetSystem.Mapper.TurnoMapper;
 import com.vetSystem.Repository.TurnoRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +25,9 @@ public class TurnoService {
     private final MascotaService mascotaService;
     private final VeterinarioService veterinarioService;
     private final TurnoMapper turnoMapper;
+
+    private final MedicamentoService medicamentoService;
+    private final MedicamentoMapper medicamentoMapper;
 
     @Transactional(readOnly = true)
     public Turno obtenerEntidad(Long id) {
@@ -118,4 +121,39 @@ public class TurnoService {
     public void eliminarTurno(Long id) {
         turnoRepository.delete(obtenerEntidad(id));
     }
+
+    @Transactional(readOnly = true)
+    public List<MedicamentoResponseDTO> listarMedicamentos(Long turnoId) {
+        Turno turno = obtenerEntidad(turnoId);
+        return turno.getMedicamentos()
+                .stream()
+                .map(medicamentoMapper::toDTO)
+                .toList();
+    }
+
+    @Transactional
+    public List<MedicamentoResponseDTO> recetarMedicamento(Long turnoId, Long medicamentoId) {
+        // comprueba si existe el turno
+        Turno turno = obtenerEntidad(turnoId);
+
+        // comprueba si existe el medicamento
+        Medicamento medicamento = medicamentoService.obtenerEntidad(medicamentoId);
+
+        // si el medicamento ya se recetó no se puede recetar devuelta en eel turno
+        if (turno.getMedicamentos().contains(medicamento)) {
+            throw new DuplicateResourceException(
+                    "El medicamento '" + medicamento.getNombre()
+                            + "' ya está recetado en el turno " + turnoId);
+        }
+
+        // valida stock y/o descuenta stock (falla si stock es menor o igual a 0)
+        medicamentoService.descontarUnidad(medicamento);
+        // si no falla, agrega el medicamento al turno
+        turno.getMedicamentos().add(medicamento);
+        turnoRepository.save(turno);
+
+        return turno.getMedicamentos().stream().map(medicamentoMapper::toDTO).toList();
+    }
+
+
 }
