@@ -9,3 +9,4 @@ Mantuve "spring.jpa.hibernate.ddl-auto=update" porque me permite que hibernate c
 Ademas estamos en entorno de desarrollo.
 
 
+
