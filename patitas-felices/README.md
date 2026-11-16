@@ -1,13 +1,14 @@
 # Patitas Felices — Microservicios
 
 Clínica veterinaria descompuesta en microservicios con Spring Boot 4.1, Spring Cloud 2025.1,
-arquitectura hexagonal, Eureka, Config Server, Actuator, OpenFeign, API Gateway y Resilience4j.
+arquitectura hexagonal, Eureka, Config Server, Actuator, OpenFeign, API Gateway, Resilience4j y JWT.
 
 ## Componentes
 
 | Componente     | Puerto | Rol                                                          |
 |----------------|--------|--------------------------------------------------------------|
 | api-gateway    | 8080   | **Único punto de entrada** (Spring Cloud Gateway, WebFlux)   |
+| ms-auth        | 8085   | Registro, login y emisión de JWT (BD `patitas_auth`)         |
 | config-server  | 8888   | Configuración centralizada (repo Git `patitas-config`)       |
 | eureka-server  | 8761   | Service Discovery                                            |
 | ms-dueno       | 8081   | Bounded Context: dueños (BD `dueno_db`)                      |
@@ -21,16 +22,19 @@ nunca con `@ManyToOne`.
 
 ## Orden de arranque
 
+0. **Redis** (Docker): `docker start patitas-redis`
 1. **config-server** (los microservicios le piden su configuración al arrancar)
 2. **eureka-server**
-3. **ms-dueno, ms-mascota, ms-veterinario, ms-turno** (en cualquier orden)
-4. **api-gateway**
+3. **ms-auth**
+4. **ms-dueno, ms-mascota, ms-veterinario, ms-turno** (en cualquier orden)
+5. **api-gateway**
 
 Desde la raíz del proyecto:
 
 ```bash
 ./mvnw spring-boot:run -pl config-server
 ./mvnw spring-boot:run -pl eureka-server
+./mvnw spring-boot:run -pl ms-auth
 ./mvnw spring-boot:run -pl ms-dueno
 ./mvnw spring-boot:run -pl ms-mascota
 ./mvnw spring-boot:run -pl ms-veterinario
@@ -141,3 +145,18 @@ La ruta `/api/turnos/**` del gateway limita por IP con `RequestRateLimiter`: 10 
 Al superar el límite responde `429 Too Many Requests`.
 
 Requiere Redis en `localhost:6379`. Sin Redis el gateway arranca igual, pero no limita y su health queda en DOWN.
+
+## Seguridad con JWT (Sprint 14)
+
+`ms-auth` registra usuarios con la contraseña encriptada con BCrypt y emite tokens JWT válidos por 24 h.
+El `AuthenticationFilter` del gateway valida el token en cada request. Los microservicios de negocio no validan nada.
+
+| Request                                    | Resultado                         |
+|--------------------------------------------|-----------------------------------|
+| `POST /auth/register` `{username, password, rol}` | 200 + `{"token": "..."}` (409 si el usuario ya existe) |
+| `POST /auth/login` `{username, password}`  | 200 + `{"token": "..."}` (401 si las credenciales son incorrectas) |
+| `GET /api/...` con `Authorization: Bearer <token>` | Pasa al microservicio, con el header `X-Auth-User` |
+| `GET /api/...` sin token, con token falso o vencido | 401 Unauthorized |
+
+- Las rutas `/auth/**` son públicas. Todo lo demás que pasa por el gateway requiere token.
+- La clave `jwt.secret` está en `patitas-config/ms-auth.yml` y en `patitas-config/api-gateway.yml`. Tiene que ser idéntica en los dos.
