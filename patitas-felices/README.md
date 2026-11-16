@@ -1,7 +1,7 @@
 # Patitas Felices — Microservicios
 
 Clínica veterinaria descompuesta en microservicios con Spring Boot 4.1, Spring Cloud 2025.1,
-arquitectura hexagonal, Eureka, Config Server, Actuator, OpenFeign y API Gateway.
+arquitectura hexagonal, Eureka, Config Server, Actuator, OpenFeign, API Gateway y Resilience4j.
 
 ## Componentes
 
@@ -115,3 +115,29 @@ gateway enruta vía Eureka (`lb://nombre-del-servicio`), balanceando entre insta
 - **Logging centralizado:** `LoggingFilter` (GlobalFilter, orden -1) registra cada request:
   `[GATEWAY] --> GET /api/duenos` / `[GATEWAY] <-- GET /api/duenos 200 15ms`.
 - El gateway es reactivo (WebFlux): **no** lleva `spring-boot-starter-webmvc`.
+
+## Resiliencia (Sprint 13)
+
+`MascotaFeignAdapter` y `VeterinarioFeignAdapter` usan `@CircuitBreaker` y `@Retry` de Resilience4j.
+La configuración está en `patitas-config/ms-turno.yml`.
+
+- **Retry:** hasta 3 intentos por request, con espera de 1 s y luego 2 s.
+- **Circuit Breaker:** ventana de 10 llamadas, mínimo 5, umbral de fallos 50 %, 10 s en OPEN y 3 llamadas de prueba en HALF_OPEN.
+- **Orden:** el Circuit Breaker envuelve al Retry, así que cada request fallido cuenta como un solo fallo.
+- **Fallback:** lanza `ServicioNoDisponibleException`, que responde 503.
+
+Un 404 del servicio remoto no cuenta como fallo: significa que el recurso no existe, no que el servicio esté caído.
+
+| Endpoint de ms-turno (:8084)                     | Qué muestra                                   |
+|--------------------------------------------------|-----------------------------------------------|
+| `/actuator/health`                               | Estado de cada circuit breaker                |
+| `/actuator/circuitbreakers`                      | Métricas de cada circuit breaker              |
+| `/actuator/circuitbreakerevents`                 | Historial de eventos y transiciones de estado |
+| `/actuator/metrics/resilience4j.circuitbreaker.state` | Métrica del estado actual                |
+
+### Rate Limiter
+
+La ruta `/api/turnos/**` del gateway limita por IP con `RequestRateLimiter`: 10 requests por segundo y picos de hasta 20.
+Al superar el límite responde `429 Too Many Requests`.
+
+Requiere Redis en `localhost:6379`. Sin Redis el gateway arranca igual, pero no limita y su health queda en DOWN.

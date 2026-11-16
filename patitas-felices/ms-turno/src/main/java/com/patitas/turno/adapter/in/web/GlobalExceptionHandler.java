@@ -2,6 +2,7 @@ package com.patitas.turno.adapter.in.web;
 
 import com.patitas.turno.domain.exception.EstadoTurnoInvalidoException;
 import com.patitas.turno.domain.exception.MascotaNotFoundException;
+import com.patitas.turno.domain.exception.ServicioNoDisponibleException;
 import com.patitas.turno.domain.exception.TurnoNotFoundException;
 import com.patitas.turno.domain.exception.TurnoSuperpuestoException;
 import com.patitas.turno.domain.exception.VeterinarioNotFoundException;
@@ -29,6 +30,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({TurnoSuperpuestoException.class, EstadoTurnoInvalidoException.class})
     public ResponseEntity<ErrorResponse> handleConflict(RuntimeException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ServicioNoDisponibleException.class)
+    public ResponseEntity<ErrorResponse> handleServicioNoDisponible(ServicioNoDisponibleException ex, HttpServletRequest request) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
     }
 
     @ExceptionHandler(FeignException.class)
