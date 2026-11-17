@@ -10,5 +10,7 @@ public interface UsuarioRepositoryPort {
 
     boolean existsByUsername(String username);
 
+    boolean existsByVeterinarioId(Long veterinarioId);
+
     Usuario save(Usuario usuario);
 }

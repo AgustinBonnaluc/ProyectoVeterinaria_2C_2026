@@ -18,10 +18,11 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    public String generateToken(String username, String rol) {
+    public String generateToken(String username, String rol, Long veterinarioId) {
         return Jwts.builder()
                 .subject(username)
                 .claim("rol", rol)
+                .claim("veterinarioId", veterinarioId)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + EXPIRACION_MS))
                 .signWith(getSigningKey())

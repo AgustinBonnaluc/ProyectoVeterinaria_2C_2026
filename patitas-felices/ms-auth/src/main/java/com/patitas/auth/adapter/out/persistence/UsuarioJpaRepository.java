@@ -15,4 +15,7 @@ public interface UsuarioJpaRepository extends JpaRepository<Usuario, Long>, Usua
 
     @Override
     boolean existsByUsername(String username);
+
+    @Override
+    boolean existsByVeterinarioId(Long veterinarioId);
 }

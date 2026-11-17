@@ -24,4 +24,7 @@ public class Usuario {
 
     @Column(nullable = false)
     private String rol;
+
+    @Column(name = "veterinario_id", unique = true)
+    private Long veterinarioId;
 }

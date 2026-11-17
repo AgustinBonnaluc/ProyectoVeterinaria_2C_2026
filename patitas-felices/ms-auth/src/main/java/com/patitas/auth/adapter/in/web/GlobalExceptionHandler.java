@@ -1,7 +1,11 @@
 package com.patitas.auth.adapter.in.web;
 
 import com.patitas.auth.domain.exception.CredencialesInvalidasException;
+import com.patitas.auth.domain.exception.MatriculaRequeridaException;
+import com.patitas.auth.domain.exception.ServicioNoDisponibleException;
 import com.patitas.auth.domain.exception.UsuarioYaExisteException;
+import com.patitas.auth.domain.exception.VeterinarioNoEncontradoException;
+import com.patitas.auth.domain.exception.VeterinarioYaVinculadoException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,8 +26,23 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(UsuarioYaExisteException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicado(UsuarioYaExisteException ex, HttpServletRequest request) {
+    @ExceptionHandler(MatriculaRequeridaException.class)
+    public ResponseEntity<ErrorResponse> handleMatriculaRequerida(MatriculaRequeridaException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(VeterinarioNoEncontradoException.class)
+    public ResponseEntity<ErrorResponse> handleVeterinarioNoEncontrado(VeterinarioNoEncontradoException ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ServicioNoDisponibleException.class)
+    public ResponseEntity<ErrorResponse> handleServicioNoDisponible(ServicioNoDisponibleException ex, HttpServletRequest request) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler({UsuarioYaExisteException.class, VeterinarioYaVinculadoException.class})
+    public ResponseEntity<ErrorResponse> handleDuplicado(RuntimeException ex, HttpServletRequest request) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 

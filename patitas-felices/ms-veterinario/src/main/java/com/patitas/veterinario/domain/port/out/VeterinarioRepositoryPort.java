@@ -20,4 +20,6 @@ public interface VeterinarioRepositoryPort {
     boolean existsById(Long id);
 
     boolean existsByMatricula(String matricula);
+
+    Optional<Veterinario> findByMatricula(String matricula);
 }

@@ -41,6 +41,12 @@ public class VeterinarioController {
                 .map(VeterinarioMapper::toResponse).toList());
     }
 
+    @Operation(summary = "Buscar un veterinario por matrícula")
+    @GetMapping("/matricula/{matricula}")
+    public ResponseEntity<VeterinarioResponse> findByMatricula(@PathVariable String matricula) {
+        return ResponseEntity.ok(VeterinarioMapper.toResponse(veterinarioService.findByMatricula(matricula)));
+    }
+
     @Operation(summary = "Registrar un veterinario")
     @PostMapping
     public ResponseEntity<VeterinarioResponse> save(@Valid @RequestBody VeterinarioRequest request) {

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface VeterinarioJpaRepository extends JpaRepository<Veterinario, Long>, VeterinarioRepositoryPort {
@@ -15,4 +16,7 @@ public interface VeterinarioJpaRepository extends JpaRepository<Veterinario, Lon
 
     @Override
     boolean existsByMatricula(String matricula);
+
+    @Override
+    Optional<Veterinario> findByMatricula(String matricula);
 }

@@ -9,6 +9,7 @@ arquitectura hexagonal, Eureka, Config Server, Actuator, OpenFeign, API Gateway,
 |----------------|--------|--------------------------------------------------------------|
 | api-gateway    | 8080   | **Único punto de entrada** (Spring Cloud Gateway, WebFlux)   |
 | ms-auth        | 8085   | Registro, login y emisión de JWT (BD `patitas_auth`)         |
+| ms-medicamento | 8086   | Stock de medicamentos y recetas por turno (BD `medicamento_db`) |
 | config-server  | 8888   | Configuración centralizada (repo Git `patitas-config`)       |
 | eureka-server  | 8761   | Service Discovery                                            |
 | ms-dueno       | 8081   | Bounded Context: dueños (BD `dueno_db`)                      |
@@ -26,7 +27,7 @@ nunca con `@ManyToOne`.
 1. **config-server** (los microservicios le piden su configuración al arrancar)
 2. **eureka-server**
 3. **ms-auth**
-4. **ms-dueno, ms-mascota, ms-veterinario, ms-turno** (en cualquier orden)
+4. **ms-dueno, ms-mascota, ms-veterinario, ms-turno, ms-medicamento** (en cualquier orden)
 5. **api-gateway**
 
 Desde la raíz del proyecto:
@@ -39,6 +40,7 @@ Desde la raíz del proyecto:
 ./mvnw spring-boot:run -pl ms-mascota
 ./mvnw spring-boot:run -pl ms-veterinario
 ./mvnw spring-boot:run -pl ms-turno
+./mvnw spring-boot:run -pl ms-medicamento
 ./mvnw spring-boot:run -pl api-gateway
 ```
 
@@ -160,3 +162,58 @@ El `AuthenticationFilter` del gateway valida el token en cada request. Los micro
 
 - Las rutas `/auth/**` son públicas. Todo lo demás que pasa por el gateway requiere token.
 - La clave `jwt.secret` está en `patitas-config/ms-auth.yml` y en `patitas-config/api-gateway.yml`. Tiene que ser idéntica en los dos.
+
+## Frontend
+
+Cliente web en `frontend/`, hecho con HTML, CSS y JavaScript sin dependencias. Se abre con doble clic en `frontend/index.html`.
+Solo habla con el gateway (`localhost:8080`), así que tienen que estar levantados todos los servicios.
+
+- **Ingreso:** login y registro contra `ms-auth`. El token se guarda en la sesión del navegador.
+- **Gestión:** altas, ediciones y bajas de dueños, mascotas y veterinarios; alta, confirmación y cancelación de turnos.
+- **Filtros:** usan los endpoints de cada servicio (mascotas por dueño, veterinarios por especialidad, turnos por veterinario o por mascota).
+- **Registro de peticiones:** muestra cada llamada al gateway con su método, ruta, código y tiempo de respuesta.
+- **Arquitectura:** diagrama del sistema y cuatro experimentos que provocan un 401, un 404 por validación cruzada con Feign y un 429 del rate limiter.
+
+## Impronta propia: cuenta vinculada al veterinario
+
+Una **cuenta de acceso** (`ms-auth`) y una **ficha de veterinario** (`ms-veterinario`) son cosas distintas, cada una en su microservicio y su base de datos.
+Para conectarlas:
+
+1. Al registrar una cuenta con rol `VET` se pide la **matrícula**.
+2. `ms-auth` consulta a `ms-veterinario` por **OpenFeign** (`GET /api/veterinarios/matricula/{matricula}`).
+3. Si la ficha existe y no tiene otra cuenta asociada, la cuenta guarda el `veterinarioId` y el token JWT lo incluye como claim.
+4. El frontend lee ese claim y muestra la sección **Mi agenda** con los turnos de ese veterinario.
+
+| Caso al registrar | Respuesta |
+|-------------------|-----------|
+| Rol `VET` sin matrícula | 400 |
+| Matrícula que no existe en `ms-veterinario` | 404 |
+| Veterinario que ya tiene una cuenta | 409 |
+| Rol distinto de `ADMIN`, `VET` o `RECEPCIONISTA` | 400 |
+| `ms-veterinario` caído | 503 |
+
+Las cuentas `ADMIN` y `RECEPCIONISTA` no se vinculan: si mandan matrícula, se ignora.
+
+## Impronta propia: microservicio de medicamentos
+
+`ms-medicamento` recupera la gestión de medicamentos del monolito, adaptada a microservicios.
+Usa la misma estructura hexagonal que los demás servicios.
+
+- **Medicamento:** nombre único (sin distinguir mayúsculas), principio activo, stock y precio unitario.
+- **Receta:** registra qué medicamento se recetó en qué turno. Guarda el `turnoId` como referencia, porque el turno vive en otra base de datos.
+- **Recetar** (`POST /api/medicamentos/{id}/recetas` con `{"turnoId": ...}`):
+  1. Consulta a `ms-turno` por **OpenFeign** que el turno exista y no esté cancelado.
+  2. Verifica que el medicamento no esté ya recetado en ese turno y que tenga stock.
+  3. Descuenta una unidad y guarda la receta **en la misma transacción local**, así nunca queda una receta sin su descuento.
+
+| Caso | Respuesta |
+|------|-----------|
+| Receta correcta | 201 y el stock baja en 1 |
+| Turno inexistente o medicamento inexistente | 404 |
+| Turno cancelado, medicamento ya recetado en el turno o nombre repetido | 409 |
+| Sin stock | 422 |
+| Eliminar un medicamento que ya fue recetado | 409 |
+| `ms-turno` caído | 503, sin descontar stock |
+
+`GET /api/medicamentos/recetas/turno/{turnoId}` lista lo recetado en un turno.
+En el frontend, la sección **Medicamentos** muestra el inventario con alertas de stock bajo y permite recetar. La agenda de turnos tiene un acceso directo "Recetar".

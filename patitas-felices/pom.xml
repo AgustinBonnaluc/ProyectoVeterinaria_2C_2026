@@ -28,6 +28,7 @@
         <module>ms-turno</module>
         <module>api-gateway</module>
         <module>ms-auth</module>
+        <module>ms-medicamento</module>
     </modules>
 
     <properties>

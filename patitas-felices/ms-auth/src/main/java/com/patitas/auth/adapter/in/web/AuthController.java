@@ -26,8 +26,8 @@ public class AuthController {
     @Operation(summary = "Registrar un usuario")
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        Usuario usuario = new Usuario(null, request.username(), request.password(), request.rol());
-        return ResponseEntity.ok(new AuthResponse(authService.register(usuario)));
+        Usuario usuario = new Usuario(null, request.username(), request.password(), request.rol(), null);
+        return ResponseEntity.ok(new AuthResponse(authService.register(usuario, request.matricula())));
     }
 
     @Operation(summary = "Iniciar sesión")

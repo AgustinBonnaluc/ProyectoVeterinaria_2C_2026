@@ -4,7 +4,7 @@ import com.patitas.auth.domain.model.Usuario;
 
 public interface AuthService {
 
-    String register(Usuario usuario);
+    String register(Usuario usuario, String matricula);
 
     String login(String username, String password);
 }

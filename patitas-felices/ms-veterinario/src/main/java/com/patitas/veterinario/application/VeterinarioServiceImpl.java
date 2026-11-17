@@ -33,6 +33,12 @@ public class VeterinarioServiceImpl implements VeterinarioService {
     }
 
     @Override
+    public Veterinario findByMatricula(String matricula) {
+        return veterinarioRepository.findByMatricula(matricula)
+                .orElseThrow(() -> new VeterinarioNotFoundException(matricula));
+    }
+
+    @Override
     public Veterinario save(Veterinario veterinario) {
         if (veterinarioRepository.existsByMatricula(veterinario.getMatricula())) {
             throw new DuplicatedMatriculaException(veterinario.getMatricula());

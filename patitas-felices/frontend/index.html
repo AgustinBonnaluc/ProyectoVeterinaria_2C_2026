@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Patitas Felices · Gestión veterinaria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+<section id="vista-login" class="login">
+    <div class="login-tarjeta">
+        <p class="sobretitulo">Universidad de Palermo · Microservicios y APIs Escalables</p>
+        <h1>Patitas Felices</h1>
+        <p class="bajada">Sistema de gestión de la clínica veterinaria</p>
+
+        <div class="pestanas" role="tablist">
+            <button type="button" class="pestana activa" data-pestana="ingresar">Ingresar</button>
+            <button type="button" class="pestana" data-pestana="registrarse">Crear cuenta de acceso</button>
+        </div>
+
+        <form id="form-login" class="formulario">
+            <label>Usuario<input name="username" autocomplete="username" required></label>
+            <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+            <button type="submit" class="boton primario">Ingresar</button>
+        </form>
+
+        <form id="form-registro" class="formulario" hidden>
+            <p class="aclaracion">Una cuenta solo habilita el ingreso al sistema. No da de alta un veterinario: las fichas profesionales se cargan desde la sección <strong>Veterinarios</strong>.</p>
+            <label>Usuario<input name="username" autocomplete="username" required></label>
+            <label>Contraseña<input name="password" type="password" autocomplete="new-password" required></label>
+            <label>Rol de la cuenta
+                <select name="rol" id="registro-rol" required>
+                    <option value="ADMIN">Administrador</option>
+                    <option value="RECEPCIONISTA">Recepcionista</option>
+                    <option value="VET">Veterinario</option>
+                </select>
+            </label>
+            <label id="campo-matricula" hidden>Matrícula del veterinario
+                <input name="matricula" placeholder="Ej: MP-100" disabled required>
+                <span class="ayuda">La cuenta se vincula con la ficha que tenga esta matrícula. <code>ms-auth</code> la valida consultando a <code>ms-veterinario</code> por OpenFeign.</span>
+            </label>
+            <button type="submit" class="boton primario">Crear cuenta</button>
+        </form>
+
+        <p class="nota">Las credenciales se validan en <code>ms-auth</code> a través del API Gateway (<code>localhost:8080</code>). El token JWT recibido acompaña cada petición posterior.</p>
+    </div>
+</section>
+
+<div id="vista-app" class="app" hidden>
+    <header class="cabecera">
+        <div class="marca">
+            <span class="marca-titulo">Patitas Felices</span>
+            <span class="marca-sub">Gestión veterinaria · arquitectura de microservicios</span>
+        </div>
+        <div class="sesion">
+            <div class="sesion-datos">
+                <span id="sesion-usuario" class="sesion-usuario"></span>
+                <span id="sesion-expira" class="sesion-expira"></span>
+            </div>
+            <button type="button" id="boton-salir" class="boton secundario chico">Cerrar sesión</button>
+        </div>
+    </header>
+
+    <div class="disposicion">
+        <nav class="menu" aria-label="Secciones">
+            <button type="button" class="menu-item" data-seccion="mi-agenda" id="menu-mi-agenda" hidden>Mi agenda</button>
+            <button type="button" class="menu-item activo" data-seccion="resumen">Resumen</button>
+            <button type="button" class="menu-item" data-seccion="duenos">Dueños</button>
+            <button type="button" class="menu-item" data-seccion="mascotas">Mascotas</button>
+            <button type="button" class="menu-item" data-seccion="veterinarios">Veterinarios</button>
+            <button type="button" class="menu-item" data-seccion="turnos">Turnos</button>
+            <button type="button" class="menu-item" data-seccion="medicamentos">Medicamentos</button>
+            <button type="button" class="menu-item" data-seccion="arquitectura">Arquitectura</button>
+        </nav>
+
+        <main class="contenido">
+
+            <section class="seccion" data-seccion="mi-agenda" hidden>
+                <header class="seccion-cabecera">
+                    <h2>Mi agenda</h2>
+                    <p id="mi-agenda-bajada"></p>
+                </header>
+                <article class="tarjeta">
+                    <h3>Próximos turnos</h3>
+                    <div id="mi-agenda-proximos"></div>
+                </article>
+                <article class="tarjeta">
+                    <h3>Historial</h3>
+                    <div id="mi-agenda-historial"></div>
+                </article>
+            </section>
+
+            <section class="seccion" data-seccion="resumen">
+                <header class="seccion-cabecera">
+                    <h2>Resumen</h2>
+                    <p>Datos agregados de los cuatro microservicios de negocio, obtenidos a través del gateway.</p>
+                </header>
+                <div class="indicadores">
+                    <div class="indicador"><span class="indicador-valor" id="ind-duenos">–</span><span class="indicador-nombre">Dueños</span><span class="indicador-origen">ms-dueno</span></div>
+                    <div class="indicador"><span class="indicador-valor" id="ind-mascotas">–</span><span class="indicador-nombre">Mascotas</span><span class="indicador-origen">ms-mascota</span></div>
+                    <div class="indicador"><span class="indicador-valor" id="ind-veterinarios">–</span><span class="indicador-nombre">Veterinarios</span><span class="indicador-origen">ms-veterinario</span></div>
+                    <div class="indicador"><span class="indicador-valor" id="ind-turnos">–</span><span class="indicador-nombre">Turnos</span><span class="indicador-origen">ms-turno</span></div>
+                    <div class="indicador"><span class="indicador-valor" id="ind-medicamentos">–</span><span class="indicador-nombre">Medicamentos</span><span class="indicador-origen" id="ind-medicamentos-detalle">ms-medicamento</span></div>
+                </div>
+                <div class="dos-columnas">
+                    <article class="tarjeta">
+                        <h3>Próximos turnos</h3>
+                        <div id="proximos-turnos"></div>
+                    </article>
+                    <article class="tarjeta">
+                        <h3>Turnos por estado</h3>
+                        <div id="turnos-por-estado" class="barras"></div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="seccion" data-seccion="duenos" hidden>
+                <header class="seccion-cabecera">
+                    <h2>Dueños</h2>
+                    <p>Microservicio <code>ms-dueno</code> · ruta <code>/api/duenos</code>. El email no puede repetirse.</p>
+                </header>
+                <article class="tarjeta">
+                    <h3 id="titulo-form-dueno">Nuevo dueño</h3>
+                    <form id="form-dueno" class="formulario grilla">
+                        <label>Nombre<input name="nombre" required></label>
+                        <label>Apellido<input name="apellido" required></label>
+                        <label>Email<input name="email" type="email" required></label>
+                        <label>Teléfono<input name="telefono" required></label>
+                        <div class="acciones-form">
+                            <button type="submit" class="boton primario">Guardar</button>
+                            <button type="button" class="boton secundario" data-cancelar="dueno" hidden>Cancelar edición</button>
+                        </div>
+                    </form>
+                </article>
+                <article class="tarjeta">
+                    <h3>Listado</h3>
+                    <div id="tabla-duenos"></div>
+                </article>
+                <article class="tarjeta" id="panel-mascotas-dueno" hidden>
+                    <h3 id="titulo-mascotas-dueno"></h3>
+                    <p class="detalle">Consulta a <code>ms-mascota</code>: <code>GET /api/mascotas/dueno/{id}</code></p>
+                    <div id="tabla-mascotas-dueno"></div>
+                </article>
+            </section>
+
+            <section class="seccion" data-seccion="mascotas" hidden>
+                <header class="seccion-cabecera">
+                    <h2>Mascotas</h2>
+                    <p>Microservicio <code>ms-mascota</code> · ruta <code>/api/mascotas</code>. Cada mascota guarda el <code>duenoId</code>, no una relación JPA.</p>
+                </header>
+                <article class="tarjeta">
+                    <h3 id="titulo-form-mascota">Nueva mascota</h3>
+                    <form id="form-mascota" class="formulario grilla">
+                        <label>Nombre<input name="nombre" required></label>
+                        <label>Especie<input name="especie" list="especies" required></label>
+                        <label>Raza<input name="raza" required></label>
+                        <label>Fecha de nacimiento<input name="fechaNacimiento" type="date"></label>
+                        <label class="ancho">Dueño<select name="duenoId" required></select></label>
+                        <div class="acciones-form">
+                            <button type="submit" class="boton primario">Guardar</button>
+                            <button type="button" class="boton secundario" data-cancelar="mascota" hidden>Cancelar edición</button>
+                        </div>
+                    </form>
+                    <datalist id="especies">
+                        <option value="Perro"><option value="Gato"><option value="Ave"><option value="Conejo"><option value="Reptil">
+                    </datalist>
+                </article>
+                <article class="tarjeta">
+                    <div class="tarjeta-cabecera">
+                        <h3>Listado</h3>
+                        <label class="filtro">Filtrar por dueño<select id="filtro-mascota-dueno"></select></label>
+                    </div>
+                    <div id="tabla-mascotas"></div>
+                </article>
+            </section>
+
+            <section class="seccion" data-seccion="veterinarios" hidden>
+                <header class="seccion-cabecera">
+                    <h2>Veterinarios</h2>
+                    <p>Microservicio <code>ms-veterinario</code> · ruta <code>/api/veterinarios</code>. La matrícula no puede repetirse.</p>
+                </header>
+                <article class="tarjeta">
+                    <h3 id="titulo-form-veterinario">Nuevo veterinario</h3>
+                    <form id="form-veterinario" class="formulario grilla">
+                        <label>Nombre<input name="nombre" required></label>
+                        <label>Apellido<input name="apellido" required></label>
+                        <label>Matrícula<input name="matricula" required></label>
+                        <label>Especialidad<input name="especialidad" required></label>
+                        <label class="ancho">Email<input name="email" type="email" required></label>
+                        <div class="acciones-form">
+                            <button type="submit" class="boton primario">Guardar</button>
+                            <button type="button" class="boton secundario" data-cancelar="veterinario" hidden>Cancelar edición</button>
+                        </div>
+                    </form>
+                </article>
+                <article class="tarjeta">
+                    <div class="tarjeta-cabecera">
+                        <h3>Listado</h3>
+                        <form id="filtro-especialidad" class="filtro en-linea">
+                            <label>Especialidad<input name="especialidad" placeholder="Ej: Felinos"></label>
+                            <button type="submit" class="boton secundario chico">Buscar</button>
+                            <button type="button" class="boton texto chico" id="limpiar-especialidad">Limpiar</button>
+                        </form>
+                    </div>
+                    <div id="tabla-veterinarios"></div>
+                </article>
+            </section>
+
+            <section class="seccion" data-seccion="turnos" hidden>
+                <header class="seccion-cabecera">
+                    <h2>Turnos</h2>
+                    <p>Microservicio <code>ms-turno</code> · ruta <code>/api/turnos</code>. Al crear un turno, <code>ms-turno</code> consulta por OpenFeign a <code>ms-mascota</code> y <code>ms-veterinario</code>.</p>
+                </header>
+                <article class="tarjeta">
+                    <h3>Nuevo turno</h3>
+                    <form id="form-turno" class="formulario grilla">
+                        <label>Mascota<select name="mascotaId" required></select></label>
+                        <label>Veterinario<select name="veterinarioId" required></select></label>
+                        <label>Fecha y hora<input name="fechaHora" type="datetime-local" required></label>
+                        <label>Motivo<input name="motivo" required></label>
+                        <div class="acciones-form">
+                            <button type="submit" class="boton primario">Solicitar turno</button>
+                        </div>
+                    </form>
+                    <p class="detalle">Reglas: la fecha debe ser futura y un veterinario no puede tener dos turnos activos a la misma hora.</p>
+                </article>
+                <article class="tarjeta">
+                    <div class="tarjeta-cabecera">
+                        <h3>Agenda</h3>
+                        <div class="filtro en-linea">
+                            <label>Veterinario<select id="filtro-turno-veterinario"></select></label>
+                            <label>Mascota<select id="filtro-turno-mascota"></select></label>
+                        </div>
+                    </div>
+                    <div id="tabla-turnos"></div>
+                </article>
+            </section>
+
+            <section class="seccion" data-seccion="medicamentos" hidden>
+                <header class="seccion-cabecera">
+                    <h2>Medicamentos</h2>
+                    <p>Microservicio <code>ms-medicamento</code> · ruta <code>/api/medicamentos</code>. Al recetar, consulta a <code>ms-turno</code> por OpenFeign y descuenta una unidad de stock.</p>
+                </header>
+                <article class="tarjeta">
+                    <h3 id="titulo-form-medicamento">Nuevo medicamento</h3>
+                    <form id="form-medicamento" class="formulario grilla">
+                        <label>Nombre<input name="nombre" maxlength="80" required></label>
+                        <label>Principio activo<input name="principioActivo" maxlength="80" required></label>
+                        <label>Stock<input name="stock" type="number" min="0" step="1" required></label>
+                        <label>Precio unitario<input name="precioUnitario" type="number" min="0.01" step="0.01" required></label>
+                        <div class="acciones-form">
+                            <button type="submit" class="boton primario">Guardar</button>
+                            <button type="button" class="boton secundario" data-cancelar="medicamento" hidden>Cancelar edición</button>
+                        </div>
+                    </form>
+                </article>
+                <article class="tarjeta">
+                    <h3>Inventario</h3>
+                    <div id="tabla-medicamentos"></div>
+                </article>
+                <article class="tarjeta">
+                    <h3>Recetar en un turno</h3>
+                    <form id="form-receta" class="formulario grilla">
+                        <label>Turno<select name="turnoId" id="receta-turno" required></select></label>
+                        <label>Medicamento<select name="medicamentoId" required></select></label>
+                        <div class="acciones-form">
+                            <button type="submit" class="boton primario">Recetar</button>
+                        </div>
+                    </form>
+                    <p class="detalle">Reglas: el turno tiene que existir y no estar cancelado, el medicamento no puede repetirse en el mismo turno y tiene que haber stock.</p>
+                    <div id="recetas-turno" class="recetas"></div>
+                </article>
+            </section>
+
+            <section class="seccion" data-seccion="arquitectura" hidden>
+                <header class="seccion-cabecera">
+                    <h2>Arquitectura</h2>
+                    <p>Este cliente solo conoce el gateway. El resto de los componentes se descubren y configuran entre sí.</p>
+                </header>
+                <article class="tarjeta">
+                    <h3>Recorrido de una petición</h3>
+                    <div class="diagrama">
+                        <div class="nodo cliente"><strong>Cliente</strong><span>Este frontend</span></div>
+                        <div class="flecha">→</div>
+                        <div class="nodo gateway">
+                            <strong>API Gateway <em>:8080</em></strong>
+                            <span>Valida el JWT · limita peticiones con Redis · CORS · registro de peticiones</span>
+                        </div>
+                        <div class="flecha">→</div>
+                        <div class="servicios">
+                            <div class="nodo"><strong>ms-auth <em>:8085</em></strong><span>Registro, login y emisión de tokens</span></div>
+                            <div class="nodo"><strong>ms-dueno <em>:8081</em></strong><span>Dueños · dueno_db</span></div>
+                            <div class="nodo"><strong>ms-mascota <em>:8082</em></strong><span>Mascotas · mascota_db</span></div>
+                            <div class="nodo"><strong>ms-veterinario <em>:8083</em></strong><span>Veterinarios · veterinario_db</span></div>
+                            <div class="nodo"><strong>ms-turno <em>:8084</em></strong><span>Turnos · Feign + Resilience4j hacia mascota y veterinario</span></div>
+                            <div class="nodo"><strong>ms-medicamento <em>:8086</em></strong><span>Stock y recetas · Feign hacia ms-turno</span></div>
+                        </div>
+                    </div>
+                    <div class="soporte">
+                        <div class="nodo tenue"><strong>Eureka <em>:8761</em></strong><span>Registro y descubrimiento de servicios</span></div>
+                        <div class="nodo tenue"><strong>Config Server <em>:8888</em></strong><span>Configuración desde el repositorio patitas-config</span></div>
+                        <div class="nodo tenue"><strong>Redis <em>:6379</em></strong><span>Estado del rate limiter del gateway</span></div>
+                    </div>
+                </article>
+                <article class="tarjeta">
+                    <h3>Experimentos</h3>
+                    <p class="detalle">Cada botón dispara peticiones reales contra el gateway para observar un mecanismo del sistema.</p>
+                    <div class="experimentos">
+                        <div class="experimento">
+                            <h4>Petición sin token</h4>
+                            <p>El filtro de autenticación del gateway debería rechazarla antes de llegar a <code>ms-dueno</code>.</p>
+                            <button type="button" class="boton secundario chico" data-experimento="sin-token">Ejecutar</button>
+                            <output id="res-sin-token"></output>
+                        </div>
+                        <div class="experimento">
+                            <h4>Token alterado</h4>
+                            <p>Se modifica la firma del token actual. Sin la clave secreta, la firma no coincide.</p>
+                            <button type="button" class="boton secundario chico" data-experimento="token-alterado">Ejecutar</button>
+                            <output id="res-token-alterado"></output>
+                        </div>
+                        <div class="experimento">
+                            <h4>Mascota inexistente</h4>
+                            <p><code>ms-turno</code> valida por Feign contra <code>ms-mascota</code> y responde 404 sin crear el turno.</p>
+                            <button type="button" class="boton secundario chico" data-experimento="mascota-inexistente">Ejecutar</button>
+                            <output id="res-mascota-inexistente"></output>
+                        </div>
+                        <div class="experimento">
+                            <h4>Ráfaga de 30 peticiones</h4>
+                            <p>La ruta de turnos admite 10 por segundo con picos de 20. El excedente recibe 429.</p>
+                            <button type="button" class="boton secundario chico" data-experimento="rafaga">Ejecutar</button>
+                            <output id="res-rafaga"></output>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+        </main>
+
+        <aside class="registro" aria-label="Registro de peticiones">
+            <div class="registro-cabecera">
+                <h3>Registro de peticiones</h3>
+                <button type="button" id="limpiar-registro" class="boton texto chico">Limpiar</button>
+            </div>
+            <p class="detalle">Todo pasa por <code>localhost:8080</code> con el header <code>Authorization: Bearer</code>.</p>
+            <ol id="lista-registro" class="lista-registro"></ol>
+        </aside>
+    </div>
+</div>
+
+<div id="avisos" class="avisos" aria-live="polite"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>

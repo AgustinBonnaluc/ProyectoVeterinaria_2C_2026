@@ -12,6 +12,8 @@ public interface VeterinarioService {
 
     List<Veterinario> findByEspecialidad(String especialidad);
 
+    Veterinario findByMatricula(String matricula);
+
     Veterinario save(Veterinario veterinario);
 
     Veterinario update(Long id, Veterinario veterinario);
