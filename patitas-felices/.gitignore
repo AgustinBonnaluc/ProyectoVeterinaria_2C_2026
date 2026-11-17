@@ -37,3 +37,5 @@ build/
 
 ### Mac OS ###
 .DS_Store
+### Logs de levantar.ps1 ###
+logs/
